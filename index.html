@@ -1,0 +1,1832 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="color-scheme" content="light" />
+  <link rel="icon" href="data:," />
+  <title>YouTube Chapter Generator</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --bg: #f6f7f8;
+      --surface: #ffffff;
+      --surface-raised: #ffffff;
+      --surface-soft: #eef0f2;
+      --ink: #151719;
+      --muted: #62676d;
+      --line: #d9dde1;
+      --line-strong: #b8bec5;
+      --accent: #e32636;
+      --accent-hover: #c71928;
+      --accent-soft: #fff0f1;
+      --success: #18794e;
+      --success-soft: #eaf7f0;
+      --warning: #8f5b00;
+      --warning-soft: #fff5dd;
+      --shadow: 0 14px 38px rgba(28, 32, 36, .08);
+      --focus: 0 0 0 3px rgba(227, 38, 54, .18);
+    }
+
+    * { box-sizing: border-box; }
+    [hidden] { display: none !important; }
+    html { min-width: 320px; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background: var(--bg);
+      color: var(--ink);
+      font-family: "Avenir Next", Avenir, "Segoe UI", sans-serif;
+      font-size: 15px;
+      line-height: 1.5;
+    }
+    button, input, select, textarea { font: inherit; }
+    button { color: inherit; }
+    svg { display: block; }
+
+    .page {
+      width: min(1240px, 100%);
+      margin: 0 auto;
+      padding: clamp(24px, 4vw, 54px) clamp(16px, 3vw, 36px) 56px;
+    }
+
+    .intro {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 28px;
+      align-items: end;
+      margin-bottom: 28px;
+    }
+    .intro h1 {
+      max-width: 760px;
+      margin: 0 0 10px;
+      font-family: Georgia, "Times New Roman", serif;
+      font-size: clamp(32px, 4.6vw, 58px);
+      font-weight: 600;
+      line-height: 1.03;
+      letter-spacing: -.035em;
+    }
+    .intro p {
+      max-width: 650px;
+      margin: 0;
+      color: var(--muted);
+      font-size: clamp(15px, 1.6vw, 18px);
+    }
+    .youtube-note {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      color: var(--muted);
+      white-space: nowrap;
+      font-size: 13px;
+      padding-bottom: 5px;
+    }
+    .yt-mark {
+      width: 34px;
+      height: 24px;
+      border-radius: 7px;
+      background: var(--accent);
+      display: grid;
+      place-items: center;
+      color: white;
+    }
+
+    .workspace {
+      display: grid;
+      grid-template-columns: minmax(0, 1.08fr) minmax(360px, .92fr);
+      gap: 18px;
+      align-items: start;
+    }
+
+    .panel {
+      min-width: 0;
+      background: var(--surface);
+      border: 1px solid var(--line);
+      box-shadow: var(--shadow);
+    }
+    .input-panel { border-radius: 18px 5px 18px 18px; }
+    .result-panel {
+      border-radius: 5px 18px 18px 18px;
+      position: sticky;
+      top: 18px;
+      overflow: hidden;
+    }
+    .panel-head {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 18px;
+      padding: 22px 22px 16px;
+    }
+    .panel-head h2 {
+      margin: 0 0 3px;
+      font-size: 18px;
+      line-height: 1.25;
+    }
+    .panel-head p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .text-wrap { padding: 0 22px; }
+    textarea {
+      display: block;
+      width: 100%;
+      min-height: 385px;
+      resize: vertical;
+      border: 1px solid var(--line-strong);
+      border-radius: 10px;
+      padding: 16px;
+      background: var(--surface-raised);
+      color: var(--ink);
+      outline: none;
+      line-height: 1.65;
+    }
+    textarea::placeholder { color: var(--muted); opacity: .8; }
+    textarea:focus, input:focus, select:focus, button:focus-visible, summary:focus-visible {
+      border-color: var(--accent);
+      box-shadow: var(--focus);
+      outline: none;
+    }
+    .text-meta {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      color: var(--muted);
+      font-size: 12px;
+      padding: 8px 2px 0;
+    }
+    .text-actions { display: flex; gap: 7px; }
+    .text-action {
+      padding: 0;
+      border: 0;
+      color: var(--muted);
+      background: transparent;
+      cursor: pointer;
+      text-decoration: underline;
+      text-decoration-color: transparent;
+      text-underline-offset: 3px;
+    }
+    .text-action:hover { color: var(--ink); text-decoration-color: currentColor; }
+
+    .options {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+      padding: 18px 22px;
+    }
+    .field label {
+      display: block;
+      margin-bottom: 6px;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: .02em;
+    }
+    .field input, .field select {
+      width: 100%;
+      height: 42px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 0 11px;
+      color: var(--ink);
+      background: var(--surface-raised);
+      outline: none;
+    }
+    .duration-field { display: none; }
+    .duration-field.visible { display: block; }
+    .primary-bar {
+      padding: 0 22px 22px;
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 10px;
+    }
+    .btn {
+      min-height: 46px;
+      border: 1px solid transparent;
+      border-radius: 9px;
+      padding: 0 17px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 9px;
+      font-weight: 750;
+      cursor: pointer;
+      transition: background .16s ease, border-color .16s ease, color .16s ease;
+    }
+    .btn-primary { background: var(--accent); color: #fff; }
+    .btn-primary:hover { background: var(--accent-hover); }
+    .btn-secondary { background: var(--surface-raised); border-color: var(--line); }
+    .btn-secondary:hover { border-color: var(--line-strong); background: var(--surface-soft); }
+    .btn-quiet {
+      background: transparent;
+      border-color: var(--line);
+      color: var(--muted);
+      min-height: 38px;
+      padding: 0 12px;
+      font-size: 13px;
+    }
+    .btn:disabled { cursor: not-allowed; opacity: .48; }
+
+    details {
+      margin: 0 22px 22px;
+      border-top: 1px solid var(--line);
+      padding-top: 14px;
+    }
+    summary {
+      cursor: pointer;
+      color: var(--muted);
+      font-size: 13px;
+      font-weight: 700;
+      width: fit-content;
+      border-radius: 4px;
+    }
+    .formats {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
+      margin-top: 12px;
+    }
+    .format {
+      min-width: 0;
+      padding: 10px;
+      background: var(--surface-soft);
+      border-radius: 7px;
+      color: var(--muted);
+      font: 11px/1.55 ui-monospace, "SFMono-Regular", Consolas, monospace;
+      white-space: pre-line;
+    }
+
+    .result-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      padding: 18px 20px;
+      border-bottom: 1px solid var(--line);
+    }
+    .result-head h2 { margin: 0; font-size: 17px; }
+    .result-actions { display: flex; gap: 7px; }
+    .empty {
+      min-height: 455px;
+      display: grid;
+      place-items: center;
+      padding: 44px 28px;
+      text-align: center;
+    }
+    .empty-inner { max-width: 300px; }
+    .timeline-art {
+      height: 52px;
+      position: relative;
+      margin: 0 auto 24px;
+      color: var(--line-strong);
+    }
+    .timeline-art::before {
+      content: "";
+      position: absolute;
+      left: 0; right: 0; top: 25px;
+      height: 2px;
+      background: currentColor;
+    }
+    .tick {
+      position: absolute;
+      top: 13px;
+      width: 2px;
+      height: 25px;
+      background: var(--accent);
+    }
+    .tick::before {
+      content: "";
+      position: absolute;
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      background: var(--accent);
+      left: -3px; top: -2px;
+    }
+    .tick:nth-child(1) { left: 8%; }
+    .tick:nth-child(2) { left: 36%; }
+    .tick:nth-child(3) { left: 65%; }
+    .tick:nth-child(4) { left: 91%; }
+    .empty h3 { margin: 0 0 8px; font-size: 17px; }
+    .empty p { margin: 0; color: var(--muted); font-size: 13px; }
+
+    .results { display: none; }
+    .results.visible { display: block; }
+    .empty.hidden { display: none; }
+    .summary-strip {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      border-bottom: 1px solid var(--line);
+      background: var(--surface-soft);
+    }
+    .summary-item { padding: 12px 15px; border-right: 1px solid var(--line); }
+    .summary-item:last-child { border-right: 0; }
+    .summary-item strong { display: block; font-size: 14px; }
+    .summary-item span { color: var(--muted); font-size: 10px; letter-spacing: .03em; text-transform: uppercase; }
+
+    .chapter-list {
+      max-height: 490px;
+      overflow-y: auto;
+      padding: 8px 0;
+    }
+    .chapter-row {
+      display: grid;
+      grid-template-columns: 74px minmax(0, 1fr) 32px;
+      gap: 8px;
+      align-items: center;
+      padding: 7px 12px;
+    }
+    .chapter-row:hover { background: var(--surface-soft); }
+    .chapter-time {
+      width: 100%;
+      border: 1px solid transparent;
+      border-radius: 6px;
+      padding: 6px 7px;
+      background: transparent;
+      color: var(--accent);
+      font: 700 13px/1.2 ui-monospace, "SFMono-Regular", Consolas, monospace;
+      outline: none;
+    }
+    .chapter-title {
+      width: 100%;
+      border: 1px solid transparent;
+      border-radius: 6px;
+      padding: 6px 7px;
+      background: transparent;
+      color: var(--ink);
+      outline: none;
+    }
+    .chapter-time:hover, .chapter-title:hover { border-color: var(--line); background: var(--surface-raised); }
+    .chapter-time:focus, .chapter-title:focus { background: var(--surface-raised); }
+    .remove-btn {
+      width: 30px; height: 30px;
+      border: 0;
+      border-radius: 6px;
+      color: var(--muted);
+      background: transparent;
+      cursor: pointer;
+      display: grid;
+      place-items: center;
+    }
+    .remove-btn:hover { color: var(--accent); background: var(--accent-soft); }
+    .add-row {
+      padding: 8px 14px 15px;
+      border-top: 1px solid var(--line);
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+    .creator-tools {
+      border-top: 1px solid var(--line);
+      background: var(--surface-soft);
+    }
+    .tool-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 14px;
+    }
+    .tool-head h3 { margin: 0; font-size: 14px; }
+    .tool-head p { margin: 2px 0 0; color: var(--muted); font-size: 11px; }
+    .tool-actions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 7px; }
+    .tool-panel {
+      display: none;
+      padding: 0 14px 14px;
+    }
+    .tool-panel.visible { display: block; }
+    .suggestion-list {
+      display: grid;
+      gap: 7px;
+      margin-bottom: 10px;
+    }
+    .suggestion-row {
+      display: grid;
+      grid-template-columns: 62px minmax(0, 1fr);
+      gap: 10px;
+      align-items: start;
+      padding: 9px 10px;
+      border: 1px solid var(--line);
+      border-radius: 7px;
+      background: var(--surface);
+    }
+    .suggestion-time {
+      color: var(--accent);
+      font: 700 12px/1.6 ui-monospace, "SFMono-Regular", Consolas, monospace;
+    }
+    .suggestion-copy { min-width: 0; }
+    .suggestion-copy strong { display: block; font-size: 12px; line-height: 1.35; }
+    .suggestion-copy span { display: block; margin-top: 2px; color: var(--muted); font-size: 10px; }
+    .description-wrap {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      overflow: hidden;
+      background: var(--surface);
+    }
+    .description-wrap textarea {
+      min-height: 240px;
+      resize: vertical;
+      border: 0;
+      border-radius: 0;
+      padding: 13px;
+      font-size: 13px;
+      line-height: 1.55;
+    }
+    .description-actions {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      padding: 9px 10px;
+      border-top: 1px solid var(--line);
+    }
+    .description-actions span { color: var(--muted); font-size: 10px; }
+    .validation {
+      display: flex;
+      align-items: flex-start;
+      gap: 8px;
+      margin: 0 14px 14px;
+      padding: 10px 11px;
+      border-radius: 7px;
+      color: var(--success);
+      background: var(--success-soft);
+      font-size: 12px;
+    }
+    .validation.warn { color: var(--warning); background: var(--warning-soft); }
+
+    .footnote {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 18px;
+      margin-top: 18px;
+      padding: 0 3px;
+      color: var(--muted);
+      font-size: 12px;
+    }
+    .footnote strong { color: var(--ink); }
+    .shortcut { white-space: nowrap; }
+    kbd {
+      border: 1px solid var(--line);
+      border-bottom-color: var(--line-strong);
+      border-radius: 4px;
+      padding: 2px 5px;
+      background: var(--surface);
+      font: 11px ui-monospace, "SFMono-Regular", Consolas, monospace;
+    }
+
+    .toast {
+      position: fixed;
+      left: 50%; bottom: 24px;
+      z-index: 10;
+      transform: translate(-50%, 20px);
+      opacity: 0;
+      pointer-events: none;
+      padding: 10px 15px;
+      border-radius: 999px;
+      background: var(--ink);
+      color: var(--bg);
+      font-weight: 700;
+      box-shadow: var(--shadow);
+      transition: opacity .2s ease, transform .2s ease;
+    }
+    .toast.show { opacity: 1; transform: translate(-50%, 0); }
+
+    .app-shell {
+      width: min(1500px, 100%);
+      min-height: 100vh;
+      margin: 0 auto;
+      display: grid;
+      grid-template-columns: 232px minmax(0, 1fr);
+    }
+    .sidebar {
+      position: sticky;
+      top: 0;
+      align-self: start;
+      min-height: 100vh;
+      padding: 28px 18px;
+      border-right: 1px solid var(--line);
+      background: var(--surface);
+    }
+    .sidebar-label {
+      margin: 0 10px 12px;
+      color: var(--muted);
+      font-size: 11px;
+      font-weight: 800;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+    }
+    .tool-nav { display: grid; gap: 5px; }
+    .nav-btn {
+      width: 100%;
+      min-height: 46px;
+      display: grid;
+      grid-template-columns: 20px minmax(0, 1fr) auto;
+      align-items: center;
+      gap: 10px;
+      padding: 9px 10px;
+      border: 0;
+      border-radius: 8px;
+      background: transparent;
+      color: var(--muted);
+      text-align: left;
+      cursor: pointer;
+    }
+    .nav-btn:hover { color: var(--ink); background: var(--surface-soft); }
+    .nav-btn.active { color: var(--accent); background: var(--accent-soft); font-weight: 800; }
+    .nav-btn svg { width: 19px; height: 19px; }
+    .nav-badge {
+      padding: 2px 6px;
+      border-radius: 999px;
+      color: var(--warning);
+      background: var(--warning-soft);
+      font-size: 9px;
+      font-weight: 800;
+      letter-spacing: .05em;
+    }
+    .sidebar-note {
+      margin: 24px 10px 0;
+      padding-top: 18px;
+      border-top: 1px solid var(--line);
+      color: var(--muted);
+      font-size: 11px;
+      line-height: 1.55;
+    }
+    .tool-view { display: none; }
+    .tool-view.active { display: block; }
+    .tool-layout {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(340px, .86fr);
+      gap: 18px;
+      align-items: start;
+    }
+    .compact-textarea { min-height: 330px; }
+    .output-panel { min-height: 520px; overflow: hidden; border-radius: 5px 18px 18px 18px; }
+    .output-body { padding: 18px; }
+    .output-empty {
+      min-height: 405px;
+      display: grid;
+      place-items: center;
+      padding: 34px;
+      color: var(--muted);
+      text-align: center;
+    }
+    .output-empty strong { display: block; margin-bottom: 6px; color: var(--ink); font-size: 16px; }
+    .hook-list { display: grid; gap: 10px; }
+    .hook-card {
+      display: grid;
+      grid-template-columns: 88px minmax(0, 1fr) auto;
+      gap: 12px;
+      align-items: start;
+      padding: 13px;
+      border: 1px solid var(--line);
+      border-radius: 9px;
+      background: var(--surface);
+    }
+    .hook-time { color: var(--accent); font: 800 12px/1.4 ui-monospace, "SFMono-Regular", Consolas, monospace; }
+    .hook-copy strong { display: block; margin-bottom: 4px; font-size: 13px; line-height: 1.35; }
+    .hook-copy p { margin: 0; color: var(--muted); font-size: 11px; line-height: 1.45; }
+    .hook-reason { display: inline-block; margin-top: 7px; color: var(--success); font-size: 10px; font-weight: 800; }
+    .icon-btn {
+      width: 34px; height: 34px;
+      border: 1px solid var(--line);
+      border-radius: 7px;
+      display: grid;
+      place-items: center;
+      background: var(--surface-raised);
+      cursor: pointer;
+    }
+    .icon-btn:hover { border-color: var(--line-strong); background: var(--surface-soft); }
+    .draft-output { min-height: 460px; font-family: Georgia, "Times New Roman", serif; line-height: 1.7; }
+    .podcast-output { min-height: 390px; font: 13px/1.7 ui-monospace, "SFMono-Regular", Consolas, monospace; }
+    .inline-notice {
+      display: flex;
+      gap: 10px;
+      align-items: flex-start;
+      margin: 0 22px 18px;
+      padding: 11px 12px;
+      border-radius: 8px;
+      color: var(--warning);
+      background: var(--warning-soft);
+      font-size: 12px;
+    }
+    .url-box { padding: 0 22px 22px; }
+    .url-box .field { margin-bottom: 12px; }
+    .url-status {
+      display: none;
+      margin-top: 14px;
+      padding: 14px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--surface-soft);
+      color: var(--muted);
+      font-size: 12px;
+    }
+    .url-status.visible { display: block; }
+    .url-status strong { display: block; margin-bottom: 4px; color: var(--ink); }
+    .feature-steps { display: grid; gap: 12px; padding: 18px; }
+    .feature-step { display: grid; grid-template-columns: 30px minmax(0, 1fr); gap: 12px; align-items: start; }
+    .feature-step b {
+      width: 30px; height: 30px;
+      display: grid; place-items: center;
+      border-radius: 50%;
+      color: var(--accent);
+      background: var(--accent-soft);
+      font-size: 12px;
+    }
+    .feature-step strong { display: block; margin-bottom: 2px; font-size: 13px; }
+    .feature-step span { color: var(--muted); font-size: 11px; }
+    .section-actions { display: flex; flex-wrap: wrap; gap: 8px; padding: 0 22px 22px; }
+    .field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; padding: 0 22px 16px; }
+
+    @media (max-width: 1080px) {
+      .app-shell { grid-template-columns: 196px minmax(0, 1fr); }
+      .sidebar { padding-inline: 12px; }
+      .page { padding-inline: 20px; }
+      .workspace, .tool-layout { grid-template-columns: 1fr; }
+      .result-panel { position: static; }
+    }
+
+    @media (max-width: 720px) {
+      .app-shell { display: block; }
+      .sidebar {
+        position: static;
+        min-height: 0;
+        padding: 12px;
+        border-right: 0;
+        border-bottom: 1px solid var(--line);
+      }
+      .sidebar-label, .sidebar-note { display: none; }
+      .tool-nav { grid-template-columns: 1fr 1fr; gap: 6px; }
+      .nav-btn { min-height: 42px; padding: 7px 8px; font-size: 12px; }
+      .nav-badge { display: none; }
+      .page { padding-top: 24px; }
+      .intro { grid-template-columns: 1fr; gap: 12px; }
+      .youtube-note { display: none; }
+      .hook-card { grid-template-columns: 76px minmax(0, 1fr) auto; }
+    }
+
+    @media (max-width: 880px) and (min-width: 721px) {
+      .intro { grid-template-columns: 1fr; gap: 12px; }
+      .youtube-note { display: none; }
+    }
+
+    @media (max-width: 560px) {
+      .page { padding: 22px 12px 36px; }
+      .intro { margin-bottom: 20px; }
+      .intro h1 { font-size: 36px; }
+      .input-panel, .result-panel { border-radius: 12px; }
+      .panel-head { padding: 18px 16px 13px; }
+      .text-wrap { padding: 0 16px; }
+      textarea { min-height: 320px; padding: 13px; }
+      .options { grid-template-columns: 1fr; padding: 15px 16px; }
+      .field-row { grid-template-columns: 1fr; padding: 0 16px 15px; }
+      .section-actions { padding: 0 16px 18px; }
+      .section-actions .btn { flex: 1 1 100%; }
+      .hook-card { grid-template-columns: 1fr 34px; }
+      .hook-time { grid-column: 1 / -1; }
+      .output-panel { min-height: 0; border-radius: 12px; }
+      .output-empty { min-height: 300px; }
+      .primary-bar { padding: 0 16px 18px; grid-template-columns: 1fr; }
+      .primary-bar .btn-secondary { order: 2; }
+      details { margin: 0 16px 18px; }
+      .formats { grid-template-columns: 1fr; }
+      .format { white-space: normal; }
+      .result-head { align-items: flex-start; padding: 15px 14px; }
+      .result-actions { flex-wrap: wrap; justify-content: flex-end; }
+      .btn-quiet { min-height: 36px; padding: 0 9px; }
+      .chapter-list { max-height: none; }
+      .tool-head { align-items: flex-start; flex-direction: column; }
+      .tool-actions { width: 100%; justify-content: stretch; }
+      .tool-actions .btn { flex: 1 1 150px; }
+      .suggestion-row { grid-template-columns: 54px minmax(0, 1fr); }
+      .description-actions { align-items: flex-start; flex-direction: column; }
+      .description-actions .btn { width: 100%; }
+      .chapter-row { grid-template-columns: 69px minmax(0, 1fr) 30px; padding: 6px 8px; }
+      .summary-item { padding: 10px 9px; }
+      .summary-item strong { font-size: 13px; }
+      .footnote { align-items: flex-start; }
+      .shortcut { display: none; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { scroll-behavior: auto !important; transition: none !important; }
+    }
+  </style>
+</head>
+<body>
+  <div class="app-shell">
+    <aside class="sidebar" aria-label="Creator tool navigation">
+      <p class="sidebar-label">Creator dashboard</p>
+      <nav class="tool-nav">
+        <button class="nav-btn active" type="button" data-tool="chapters" aria-current="page">
+          <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M5 5h14M5 12h14M5 19h14M3 5h.01M3 12h.01M3 19h.01" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+          <span>Chapter generator</span>
+        </button>
+        <button class="nav-btn" type="button" data-tool="hooks">
+          <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M7 4v8a5 5 0 0 0 10 0V7a3 3 0 0 0-6 0v5a1 1 0 0 0 2 0V8" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+          <span>Hook finder</span>
+        </button>
+        <button class="nav-btn" type="button" data-tool="blog">
+          <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M6 3h9l3 3v15H6V3Z" stroke="currentColor" stroke-width="1.7"/><path d="M9 10h6M9 14h6M9 18h4M15 3v4h3" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>
+          <span>Blog draft</span>
+        </button>
+        <button class="nav-btn" type="button" data-tool="podcast">
+          <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="12" cy="10" r="3" stroke="currentColor" stroke-width="1.7"/><path d="M7 10a5 5 0 0 0 10 0M4 10a8 8 0 0 0 16 0M12 15v6M9 21h6" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>
+          <span>Podcast chapters</span>
+        </button>
+        <button class="nav-btn" type="button" data-tool="import">
+          <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M10 8.5 15 12l-5 3.5v-7Z" fill="currentColor"/><rect x="3" y="5" width="18" height="14" rx="4" stroke="currentColor" stroke-width="1.7"/></svg>
+          <span>YouTube import</span>
+          <span class="nav-badge">API</span>
+        </button>
+      </nav>
+      <p class="sidebar-note">One transcript can power chapters, short-form hooks, a blog draft, and podcast timestamps.</p>
+    </aside>
+
+    <main class="page">
+      <section class="tool-view active" id="view-chapters" data-view="chapters">
+    <section class="intro" aria-labelledby="page-title">
+      <div>
+        <h1 id="page-title">Turn a transcript into clean YouTube chapters.</h1>
+        <p>Paste any timestamped transcript. Get chapter titles you can polish, validate, and copy straight into your video description.</p>
+      </div>
+      <div class="youtube-note" aria-hidden="true">
+        <span class="yt-mark">
+          <svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M4.7 3.2 9.4 6.5 4.7 9.8V3.2Z" fill="currentColor"/></svg>
+        </span>
+        Built for YouTube’s chapter format
+      </div>
+    </section>
+
+    <section class="workspace" aria-label="Chapter generator">
+      <div class="panel input-panel">
+        <div class="panel-head">
+          <div>
+            <h2>Transcript</h2>
+            <p>Timestamps can be inline, on separate lines, SRT, or VTT.</p>
+          </div>
+        </div>
+
+        <div class="text-wrap">
+          <label for="transcript" class="sr-only" style="position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap;border:0">Paste transcript</label>
+          <textarea id="transcript" spellcheck="true" placeholder="00:00 Welcome to the video...&#10;00:42 Why chapter titles matter...&#10;02:15 A practical workflow..."></textarea>
+          <div class="text-meta">
+            <span id="wordCount">0 words</span>
+            <span class="text-actions"><button class="text-action" id="exampleBtn" type="button">Try example</button><button class="text-action" id="clearBtn" type="button">Clear</button></span>
+          </div>
+        </div>
+
+        <div class="options">
+          <div class="field">
+            <label for="chapterCount">NUMBER OF CHAPTERS</label>
+            <select id="chapterCount">
+              <option value="auto">Auto</option>
+              <option value="4">4 chapters</option>
+              <option value="6">6 chapters</option>
+              <option value="8">8 chapters</option>
+              <option value="10">10 chapters</option>
+              <option value="12">12 chapters</option>
+            </select>
+          </div>
+          <div class="field">
+            <label for="titleStyle">TITLE STYLE</label>
+            <select id="titleStyle">
+              <option value="clear">Clear &amp; descriptive</option>
+              <option value="concise">Short &amp; punchy</option>
+              <option value="sentence">Sentence case</option>
+            </select>
+          </div>
+          <div class="field duration-field" id="durationField">
+            <label for="duration">VIDEO LENGTH (MM:SS)</label>
+            <input id="duration" type="text" inputmode="numeric" placeholder="12:30" autocomplete="off" />
+          </div>
+        </div>
+
+        <div class="primary-bar">
+          <button class="btn btn-primary" id="generateBtn" type="button">
+            <svg width="18" height="18" viewBox="0 0 20 20" fill="none" aria-hidden="true"><path d="M10 2v3M10 15v3M2 10h3M15 10h3M4.35 4.35l2.12 2.12M13.53 13.53l2.12 2.12M15.65 4.35l-2.12 2.12M6.47 13.53l-2.12 2.12" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><circle cx="10" cy="10" r="3.5" stroke="currentColor" stroke-width="1.8"/></svg>
+            Generate chapters
+          </button>
+          <button class="btn btn-secondary" id="pasteBtn" type="button">
+            <svg width="16" height="16" viewBox="0 0 20 20" fill="none" aria-hidden="true"><path d="M7 5V3.8C7 2.8 7.8 2 8.8 2h2.4c1 0 1.8.8 1.8 1.8V5m-6 0h6m-6 0H5.8C4.8 5 4 5.8 4 6.8v9.4c0 1 .8 1.8 1.8 1.8h8.4c1 0 1.8-.8 1.8-1.8V6.8c0-1-.8-1.8-1.8-1.8H13" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>
+            Paste
+          </button>
+        </div>
+
+        <details>
+          <summary>Supported transcript formats</summary>
+          <div class="formats">
+            <div class="format">00:00 Intro
+01:24 First topic</div>
+            <div class="format">00:00
+Intro text
+
+01:24
+First topic</div>
+            <div class="format">1
+00:00:00,000 --&gt; 00:00:08,000
+Intro text</div>
+          </div>
+        </details>
+      </div>
+
+      <div class="panel result-panel">
+        <div class="result-head">
+          <h2>Your chapters</h2>
+          <div class="result-actions">
+            <button class="btn btn-quiet" id="downloadBtn" type="button" disabled>Download</button>
+            <button class="btn btn-quiet" id="copyBtn" type="button" disabled>
+              <svg width="14" height="14" viewBox="0 0 20 20" fill="none" aria-hidden="true"><rect x="6" y="6" width="10" height="10" rx="2" stroke="currentColor" stroke-width="1.6"/><path d="M13 6V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h1" stroke="currentColor" stroke-width="1.6"/></svg>
+              Copy all
+            </button>
+          </div>
+        </div>
+
+        <div class="empty" id="emptyState">
+          <div class="empty-inner">
+            <div class="timeline-art" aria-hidden="true"><i class="tick"></i><i class="tick"></i><i class="tick"></i><i class="tick"></i></div>
+            <h3>Your timeline starts here</h3>
+            <p>Paste a transcript on the left, then generate. You can edit every timestamp and title before copying.</p>
+          </div>
+        </div>
+
+        <div class="results" id="results">
+          <div class="summary-strip">
+            <div class="summary-item"><strong id="summaryCount">0</strong><span>chapters</span></div>
+            <div class="summary-item"><strong id="summaryDuration">—</strong><span>video length</span></div>
+            <div class="summary-item"><strong id="summarySource">—</strong><span>timing</span></div>
+          </div>
+          <div class="chapter-list" id="chapterList" aria-label="Generated chapters"></div>
+          <div class="add-row"><button class="btn btn-quiet" id="addBtn" type="button">+ Add chapter</button></div>
+          <div class="creator-tools">
+            <div class="tool-head">
+              <div>
+                <h3>Creator tools</h3>
+                <p>Polish titles or package everything into a description.</p>
+              </div>
+              <div class="tool-actions">
+                <button class="btn btn-quiet" id="seoBtn" type="button" aria-controls="seoPanel" aria-expanded="false">Suggest SEO titles</button>
+                <button class="btn btn-quiet" id="descriptionBtn" type="button" aria-controls="descriptionPanel" aria-expanded="false">Build description</button>
+              </div>
+            </div>
+            <div class="tool-panel" id="seoPanel">
+              <div class="suggestion-list" id="suggestionList"></div>
+              <button class="btn btn-secondary" id="applySeoBtn" type="button">Apply all suggestions</button>
+            </div>
+            <div class="tool-panel" id="descriptionPanel">
+              <div class="description-wrap">
+                <label for="descriptionOutput" class="sr-only" style="position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap;border:0">Generated video description</label>
+                <textarea id="descriptionOutput" spellcheck="true"></textarea>
+                <div class="description-actions">
+                  <span>Edit anything before copying it to YouTube.</span>
+                  <button class="btn btn-secondary" id="copyDescriptionBtn" type="button">Copy description</button>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="validation" id="validation" role="status"></div>
+        </div>
+      </div>
+    </section>
+
+    <div class="footnote">
+      <span><strong>Tip:</strong> YouTube needs the first chapter at 00:00, at least 3 chapters, and each chapter to be 10 seconds or longer.</span>
+      <span class="shortcut"><kbd>Ctrl</kbd> + <kbd>Enter</kbd> to generate</span>
+    </div>
+      </section>
+
+      <section class="tool-view" id="view-hooks" data-view="hooks">
+        <section class="intro" aria-labelledby="hooks-title">
+          <div>
+            <h1 id="hooks-title">Find the moments worth clipping.</h1>
+            <p>Scan a transcript for strong questions, bold claims, clear payoffs, and specific moments that can become 30-second Shorts or Reels.</p>
+          </div>
+        </section>
+        <section class="tool-layout" aria-label="Hook finder">
+          <div class="panel input-panel">
+            <div class="panel-head"><div><h2>Source transcript</h2><p>Timestamped text works best. Plain text needs the video length.</p></div></div>
+            <div class="text-wrap">
+              <label for="hookTranscript" class="sr-only" style="position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap;border:0">Transcript for hook finder</label>
+              <textarea class="compact-textarea" id="hookTranscript" placeholder="00:00 Today I tested three microphones...&#10;00:46 Most creators make this one setup mistake..."></textarea>
+              <div class="text-meta"><span id="hookWordCount">0 words</span><span class="text-actions"><button class="text-action" id="hookUseMain" type="button">Use chapter transcript</button></span></div>
+            </div>
+            <div class="field-row">
+              <div class="field"><label for="hookDuration">VIDEO LENGTH IF NO TIMESTAMPS</label><input id="hookDuration" type="text" inputmode="numeric" placeholder="12:30"></div>
+              <div class="field"><label for="hookCount">SUGGESTIONS</label><select id="hookCount"><option value="3">Top 3</option><option value="5" selected>Top 5</option><option value="7">Top 7</option></select></div>
+            </div>
+            <div class="section-actions"><button class="btn btn-primary" id="findHooksBtn" type="button">Find 30-second hooks</button><button class="btn btn-secondary" id="hookExampleBtn" type="button">Load example</button></div>
+          </div>
+          <div class="panel output-panel">
+            <div class="result-head"><h2>Clip suggestions</h2><button class="btn btn-quiet" id="copyHooksBtn" type="button" disabled>Copy all</button></div>
+            <div class="output-empty" id="hookEmpty"><div><strong>Your strongest moments will appear here</strong>Each suggestion includes a time range, excerpt, and why it may hold attention.</div></div>
+            <div class="output-body" id="hookResults" hidden><div class="hook-list" id="hookList"></div></div>
+          </div>
+        </section>
+      </section>
+
+      <section class="tool-view" id="view-blog" data-view="blog">
+        <section class="intro" aria-labelledby="blog-title">
+          <div>
+            <h1 id="blog-title">Shape a transcript into a blog draft.</h1>
+            <p>Turn the spoken structure into a readable Markdown article with headings, an introduction, and key takeaways.</p>
+          </div>
+        </section>
+        <section class="tool-layout" aria-label="Transcript to blog draft">
+          <div class="panel input-panel">
+            <div class="panel-head"><div><h2>Source transcript</h2><p>The draft keeps the ideas in your transcript and reorganizes them for reading.</p></div></div>
+            <div class="text-wrap">
+              <label for="blogTranscript" class="sr-only" style="position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap;border:0">Transcript for blog draft</label>
+              <textarea class="compact-textarea" id="blogTranscript" placeholder="Paste a transcript with or without timestamps..."></textarea>
+              <div class="text-meta"><span id="blogWordCount">0 words</span><span class="text-actions"><button class="text-action" id="blogUseMain" type="button">Use chapter transcript</button></span></div>
+            </div>
+            <div class="field-row">
+              <div class="field"><label for="blogDraftTitle">ARTICLE TITLE (OPTIONAL)</label><input id="blogDraftTitle" type="text" placeholder="A practical guide to..."></div>
+              <div class="field"><label for="blogSections">SECTION COUNT</label><select id="blogSections"><option value="4">4 sections</option><option value="5" selected>5 sections</option><option value="6">6 sections</option></select></div>
+            </div>
+            <div class="section-actions"><button class="btn btn-primary" id="buildBlogBtn" type="button">Build blog draft</button><button class="btn btn-secondary" id="blogExampleBtn" type="button">Load example</button></div>
+          </div>
+          <div class="panel output-panel">
+            <div class="result-head"><h2>Markdown draft</h2><div class="result-actions"><button class="btn btn-quiet" id="downloadBlogBtn" type="button" disabled>Download</button><button class="btn btn-quiet" id="copyBlogBtn" type="button" disabled>Copy</button></div></div>
+            <div class="output-empty" id="blogEmpty"><div><strong>A structured draft, ready to edit</strong>Your transcript becomes a title, intro, clear sections, and takeaways.</div></div>
+            <div class="output-body" id="blogResults" hidden><textarea class="draft-output" id="blogOutput" aria-label="Generated Markdown blog draft"></textarea></div>
+          </div>
+        </section>
+      </section>
+
+      <section class="tool-view" id="view-podcast" data-view="podcast">
+        <section class="intro" aria-labelledby="podcast-title">
+          <div>
+            <h1 id="podcast-title">Format chapters for your podcast.</h1>
+            <p>Generate clean episode timestamps for Spotify, Apple Podcasts, or a universal show-notes format.</p>
+          </div>
+        </section>
+        <section class="tool-layout" aria-label="Podcast chapter formatter">
+          <div class="panel input-panel">
+            <div class="panel-head"><div><h2>Episode transcript</h2><p>Use timestamps for exact chapters, or add the episode length for estimates.</p></div></div>
+            <div class="text-wrap">
+              <label for="podcastTranscript" class="sr-only" style="position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap;border:0">Podcast transcript</label>
+              <textarea class="compact-textarea" id="podcastTranscript" placeholder="00:00 Welcome and episode overview...&#10;02:10 The first big idea..."></textarea>
+              <div class="text-meta"><span id="podcastWordCount">0 words</span><span class="text-actions"><button class="text-action" id="podcastUseMain" type="button">Use chapter transcript</button></span></div>
+            </div>
+            <div class="field-row">
+              <div class="field"><label for="podcastDuration">EPISODE LENGTH IF NO TIMESTAMPS</label><input id="podcastDuration" type="text" inputmode="numeric" placeholder="38:00"></div>
+              <div class="field"><label for="podcastFormat">OUTPUT FORMAT</label><select id="podcastFormat"><option value="spotify">Spotify</option><option value="apple">Apple Podcasts</option><option value="universal">Universal show notes</option></select></div>
+            </div>
+            <div class="section-actions"><button class="btn btn-primary" id="buildPodcastBtn" type="button">Generate podcast chapters</button><button class="btn btn-secondary" id="podcastExampleBtn" type="button">Load example</button></div>
+          </div>
+          <div class="panel output-panel">
+            <div class="result-head"><h2>Episode chapters</h2><div class="result-actions"><button class="btn btn-quiet" id="downloadPodcastBtn" type="button" disabled>Download</button><button class="btn btn-quiet" id="copyPodcastBtn" type="button" disabled>Copy</button></div></div>
+            <div class="output-empty" id="podcastEmpty"><div><strong>Publish-ready timestamps</strong>Choose a format and generate a clean list for your episode notes.</div></div>
+            <div class="output-body" id="podcastResults" hidden><textarea class="podcast-output" id="podcastOutput" aria-label="Generated podcast chapters"></textarea><div class="validation" id="podcastValidation" role="status" style="margin:12px 0 0"></div></div>
+          </div>
+        </section>
+      </section>
+
+      <section class="tool-view" id="view-import" data-view="import">
+        <section class="intro" aria-labelledby="import-title">
+          <div>
+            <h1 id="import-title">Start with a YouTube link.</h1>
+            <p>Validate a video URL now. Automatic transcript and duration fetching is mapped out for the server-backed version.</p>
+          </div>
+        </section>
+        <section class="tool-layout" aria-label="YouTube URL import">
+          <div class="panel input-panel">
+            <div class="panel-head"><div><h2>YouTube video URL</h2><p>Paste a standard, short, or Shorts link.</p></div></div>
+            <div class="inline-notice">
+              <svg width="17" height="17" viewBox="0 0 20 20" fill="none" aria-hidden="true" style="flex:none"><circle cx="10" cy="10" r="7.5" stroke="currentColor" stroke-width="1.6"/><path d="M10 9v4M10 6.5v.1" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>
+              <span>Automatic transcript fetching needs a backend transcript service. This browser-only version will not pretend to fetch it.</span>
+            </div>
+            <div class="url-box">
+              <div class="field"><label for="youtubeUrl">VIDEO URL</label><input id="youtubeUrl" type="url" placeholder="https://www.youtube.com/watch?v=..."></div>
+              <button class="btn btn-primary" id="checkUrlBtn" type="button">Check video link</button>
+              <div class="url-status" id="urlStatus" role="status"></div>
+            </div>
+          </div>
+          <div class="panel output-panel">
+            <div class="result-head"><h2>Import workflow</h2></div>
+            <div class="feature-steps">
+              <div class="feature-step"><b>1</b><div><strong>Validate the video link</strong><span>The browser checks the YouTube URL and extracts the video ID.</span></div></div>
+              <div class="feature-step"><b>2</b><div><strong>Fetch transcript and duration</strong><span>A backend service will handle YouTube access and transcript availability.</span></div></div>
+              <div class="feature-step"><b>3</b><div><strong>Send it to every creator tool</strong><span>One import can power chapters, hook suggestions, a blog draft, and podcast timestamps.</span></div></div>
+            </div>
+            <div class="section-actions"><button class="btn btn-secondary" id="manualImportBtn" type="button">Use manual transcript now</button></div>
+          </div>
+        </section>
+      </section>
+    </main>
+  </div>
+
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+  <script>
+    (function () {
+      'use strict';
+
+      var transcript = document.getElementById('transcript');
+      var chapterCount = document.getElementById('chapterCount');
+      var titleStyle = document.getElementById('titleStyle');
+      var durationField = document.getElementById('durationField');
+      var durationInput = document.getElementById('duration');
+      var generateBtn = document.getElementById('generateBtn');
+      var pasteBtn = document.getElementById('pasteBtn');
+      var exampleBtn = document.getElementById('exampleBtn');
+      var clearBtn = document.getElementById('clearBtn');
+      var copyBtn = document.getElementById('copyBtn');
+      var downloadBtn = document.getElementById('downloadBtn');
+      var addBtn = document.getElementById('addBtn');
+      var seoBtn = document.getElementById('seoBtn');
+      var descriptionBtn = document.getElementById('descriptionBtn');
+      var seoPanel = document.getElementById('seoPanel');
+      var descriptionPanel = document.getElementById('descriptionPanel');
+      var suggestionList = document.getElementById('suggestionList');
+      var applySeoBtn = document.getElementById('applySeoBtn');
+      var descriptionOutput = document.getElementById('descriptionOutput');
+      var copyDescriptionBtn = document.getElementById('copyDescriptionBtn');
+      var wordCount = document.getElementById('wordCount');
+      var emptyState = document.getElementById('emptyState');
+      var results = document.getElementById('results');
+      var chapterList = document.getElementById('chapterList');
+      var validation = document.getElementById('validation');
+      var summaryCount = document.getElementById('summaryCount');
+      var summaryDuration = document.getElementById('summaryDuration');
+      var summarySource = document.getElementById('summarySource');
+      var toast = document.getElementById('toast');
+      var navButtons = Array.prototype.slice.call(document.querySelectorAll('.nav-btn'));
+      var toolViews = Array.prototype.slice.call(document.querySelectorAll('.tool-view'));
+      var hookTranscript = document.getElementById('hookTranscript');
+      var hookDuration = document.getElementById('hookDuration');
+      var hookCount = document.getElementById('hookCount');
+      var hookWordCount = document.getElementById('hookWordCount');
+      var hookEmpty = document.getElementById('hookEmpty');
+      var hookResults = document.getElementById('hookResults');
+      var hookList = document.getElementById('hookList');
+      var copyHooksBtn = document.getElementById('copyHooksBtn');
+      var blogTranscript = document.getElementById('blogTranscript');
+      var blogWordCount = document.getElementById('blogWordCount');
+      var blogDraftTitle = document.getElementById('blogDraftTitle');
+      var blogSections = document.getElementById('blogSections');
+      var blogEmpty = document.getElementById('blogEmpty');
+      var blogResults = document.getElementById('blogResults');
+      var blogOutput = document.getElementById('blogOutput');
+      var copyBlogBtn = document.getElementById('copyBlogBtn');
+      var downloadBlogBtn = document.getElementById('downloadBlogBtn');
+      var podcastTranscript = document.getElementById('podcastTranscript');
+      var podcastWordCount = document.getElementById('podcastWordCount');
+      var podcastDuration = document.getElementById('podcastDuration');
+      var podcastFormat = document.getElementById('podcastFormat');
+      var podcastEmpty = document.getElementById('podcastEmpty');
+      var podcastResults = document.getElementById('podcastResults');
+      var podcastOutput = document.getElementById('podcastOutput');
+      var podcastValidation = document.getElementById('podcastValidation');
+      var copyPodcastBtn = document.getElementById('copyPodcastBtn');
+      var downloadPodcastBtn = document.getElementById('downloadPodcastBtn');
+      var youtubeUrl = document.getElementById('youtubeUrl');
+      var urlStatus = document.getElementById('urlStatus');
+      var chapters = [];
+      var seoSuggestions = [];
+      var sourceMode = 'timestamps';
+      var detectedDuration = 0;
+      var hookSuggestions = [];
+      var toastTimer;
+
+      var example = [
+        '00:00 Welcome back. Today we are building a simple home recording setup without overspending.',
+        '00:32 Start by choosing the quietest room in your home. Soft furniture and curtains help reduce reflections.',
+        '01:48 The microphone matters, but placement matters more. Keep it close and slightly off axis.',
+        '03:20 Next, set your input level so normal speech peaks safely below clipping.',
+        '04:55 Lighting is easier than it looks. Use one soft key light near a window and control the background.',
+        '06:42 Now let us clean up the audio with a light noise reduction and a small amount of compression.',
+        '08:18 For editing, remove long pauses first, then add supporting shots only where they clarify the story.',
+        '10:05 Finally, export at the same frame rate you recorded and review the full video before uploading.',
+        '11:12 That is the complete setup. Check the description for the equipment list and next steps.'
+      ].join('\n');
+
+      var stopWords = {
+        'a':1,'an':1,'and':1,'are':1,'as':1,'at':1,'be':1,'been':1,'but':1,'by':1,'for':1,'from':1,'had':1,'has':1,'have':1,'he':1,'her':1,'here':1,'him':1,'his':1,'how':1,'i':1,'if':1,'in':1,'into':1,'is':1,'it':1,'its':1,'just':1,'me':1,'my':1,'of':1,'on':1,'or':1,'our':1,'she':1,'so':1,'that':1,'the':1,'their':1,'them':1,'then':1,'there':1,'they':1,'this':1,'to':1,'up':1,'us':1,'was':1,'we':1,'were':1,'what':1,'when':1,'where':1,'which':1,'who':1,'why':1,'will':1,'with':1,'you':1,'your':1,'actually':1,'basically':1,'really':1,'okay':1,'well':1,'um':1,'uh':1,'like':1,'today':1,'video':1
+      };
+
+      function showToast(message) {
+        clearTimeout(toastTimer);
+        toast.textContent = message;
+        toast.classList.add('show');
+        toastTimer = setTimeout(function () { toast.classList.remove('show'); }, 1900);
+      }
+
+      function parseTime(value) {
+        if (!value) return null;
+        var clean = String(value).trim().replace(/[\[\]]/g, '').replace(',', '.');
+        if (!/^\d{1,2}:\d{2}(?::\d{2})?(?:\.\d+)?$/.test(clean)) return null;
+        var parts = clean.split(':').map(Number);
+        if (parts.some(function (n) { return !isFinite(n); })) return null;
+        if (parts.length === 2) return Math.round(parts[0] * 60 + parts[1]);
+        return Math.round(parts[0] * 3600 + parts[1] * 60 + parts[2]);
+      }
+
+      function formatTime(total) {
+        total = Math.max(0, Math.round(Number(total) || 0));
+        var h = Math.floor(total / 3600);
+        var m = Math.floor((total % 3600) / 60);
+        var s = total % 60;
+        if (h > 0) return h + ':' + String(m).padStart(2, '0') + ':' + String(s).padStart(2, '0');
+        return m + ':' + String(s).padStart(2, '0');
+      }
+
+      function cleanCaption(value) {
+        return String(value || '')
+          .replace(/<[^>]*>/g, ' ')
+          .replace(/\{[^}]*\}/g, ' ')
+          .replace(/^[A-Z][A-Z0-9 _-]{1,24}:\s*/, '')
+          .replace(/\s+/g, ' ')
+          .trim();
+      }
+
+      function parseTimedTranscript(text) {
+        var lines = text.replace(/\r/g, '').split('\n');
+        var cues = [];
+        var pendingTime = null;
+        var pendingText = [];
+
+        function flushPending() {
+          if (pendingTime !== null && pendingText.length) {
+            var joined = cleanCaption(pendingText.join(' '));
+            if (joined) cues.push({ time: pendingTime, text: joined });
+          }
+          pendingTime = null;
+          pendingText = [];
+        }
+
+        lines.forEach(function (raw) {
+          var line = raw.trim();
+          if (!line) { flushPending(); return; }
+          if (/^WEBVTT/i.test(line) || /^\d+$/.test(line) || /^NOTE\b/i.test(line)) return;
+
+          var range = line.match(/^(?:\[)?(\d{1,2}:\d{2}(?::\d{2})?(?:[.,]\d+)?)(?:\])?\s*-->\s*(\d{1,2}:\d{2}(?::\d{2})?(?:[.,]\d+)?)(?:\s+.*)?$/);
+          if (range) {
+            flushPending();
+            pendingTime = parseTime(range[1]);
+            return;
+          }
+
+          var inline = line.match(/^(?:\[)?(\d{1,2}:\d{2}(?::\d{2})?(?:[.,]\d+)?)(?:\])?(?:\s*[-–—|]\s*|\s+)(.+)$/);
+          if (inline) {
+            flushPending();
+            var t = parseTime(inline[1]);
+            var caption = cleanCaption(inline[2]);
+            if (t !== null && caption) cues.push({ time: t, text: caption });
+            return;
+          }
+
+          var justTime = line.match(/^(?:\[)?(\d{1,2}:\d{2}(?::\d{2})?(?:[.,]\d+)?)(?:\])?$/);
+          if (justTime) {
+            flushPending();
+            pendingTime = parseTime(justTime[1]);
+            return;
+          }
+
+          if (pendingTime !== null) pendingText.push(line);
+        });
+        flushPending();
+
+        cues.sort(function (a, b) { return a.time - b.time; });
+        var merged = [];
+        cues.forEach(function (cue) {
+          var last = merged[merged.length - 1];
+          if (last && last.time === cue.time) last.text += ' ' + cue.text;
+          else merged.push(cue);
+        });
+        return merged;
+      }
+
+      function estimateCues(text, duration) {
+        var clean = cleanCaption(text.replace(/\n+/g, ' '));
+        var sentences = clean.match(/[^.!?]+[.!?]+|[^.!?]+$/g) || [];
+        sentences = sentences.map(cleanCaption).filter(Boolean);
+        if (!sentences.length) return [];
+        var totalWords = sentences.reduce(function (sum, s) { return sum + s.split(/\s+/).length; }, 0);
+        var elapsedWords = 0;
+        return sentences.map(function (sentence) {
+          var cue = { time: Math.round(duration * elapsedWords / Math.max(1, totalWords)), text: sentence };
+          elapsedWords += sentence.split(/\s+/).length;
+          return cue;
+        });
+      }
+
+      function titleCase(text) {
+        var small = {'a':1,'an':1,'and':1,'as':1,'at':1,'but':1,'by':1,'for':1,'in':1,'nor':1,'of':1,'on':1,'or':1,'the':1,'to':1,'up':1,'via':1};
+        return text.split(/\s+/).map(function (word, index, arr) {
+          if (/^[A-Z0-9]{2,}$/.test(word)) return word;
+          var lower = word.toLowerCase();
+          if (index > 0 && index < arr.length - 1 && small[lower]) return lower;
+          return lower.charAt(0).toUpperCase() + lower.slice(1);
+        }).join(' ');
+      }
+
+      function deriveTitle(text, index, style) {
+        var clean = cleanCaption(text)
+          .replace(/^(?:okay|well|so|now|next|finally|first|second|third)[, ]+/i, '')
+          .replace(/^(?:in this video|today we(?:'re| are) going to|we(?:'re| are) going to|let(?:'s| us)|i want to|i(?:'m| am) going to)\s+/i, '')
+          .replace(/^(?:talk about|look at|cover|show you|learn about|start by|move on to)\s+/i, '')
+          .replace(/\s+/g, ' ')
+          .trim();
+
+        if (index === 0 && (!clean || /^(welcome|hello|hey|thanks for)/i.test(clean))) return 'Introduction';
+        var first = (clean.match(/^[^.!?;:]+/) || [clean])[0];
+        var words = first.replace(/[^\p{L}\p{N}'&+.-]+/gu, ' ').trim().split(/\s+/).filter(Boolean);
+        if (!words.length) return index === 0 ? 'Introduction' : 'Chapter ' + (index + 1);
+
+        var meaningful = words.filter(function (w) { return !stopWords[w.toLowerCase()]; });
+        var pool = meaningful.length >= 3 ? meaningful : words;
+        var maxWords = style === 'concise' ? 4 : 7;
+        var selected = [];
+        for (var i = 0; i < pool.length && selected.length < maxWords; i++) {
+          if (pool[i].length > 1 || /\d/.test(pool[i])) selected.push(pool[i]);
+        }
+        if (selected.length < 2) selected = words.slice(0, maxWords);
+        var raw = selected.join(' ').replace(/[.,;:!?-]+$/g, '');
+        if (raw.length > 58) raw = raw.slice(0, 55).replace(/\s+\S*$/, '') + '…';
+        if (style === 'sentence') return raw.charAt(0).toUpperCase() + raw.slice(1).toLowerCase();
+        return titleCase(raw);
+      }
+
+      function meaningfulWords(text) {
+        return cleanCaption(text).replace(/[^\p{L}\p{N}'&+.-]+/gu, ' ').split(/\s+/).filter(function (word) {
+          return word.length > 2 && !stopWords[word.toLowerCase()];
+        });
+      }
+
+      function deriveSeoTitle(text, current, index) {
+        var cleaned = cleanCaption(text)
+          .replace(/^(?:okay|well|so|now|next|finally|first|second|third)[, ]+/i, '')
+          .replace(/^(?:in this video|today we(?:'re| are) going to|we(?:'re| are) going to|let(?:'s| us)|i want to|i(?:'m| am) going to)\s+/i, '')
+          .trim();
+        var phrase = (cleaned.match(/^[^.!?;]+/) || [cleaned])[0]
+          .replace(/^(?:start by|move on to|talk about|look at|cover|show you)\s+/i, '')
+          .trim();
+        var words = phrase.split(/\s+/).filter(Boolean);
+        if (words.length > 8) words = words.slice(0, 8);
+        phrase = words.join(' ').replace(/[.,;:!?-]+$/g, '');
+        if (!phrase) phrase = current || ('Chapter ' + (index + 1));
+
+        if (index === 0 && current === 'Introduction') {
+          var topicWords = meaningfulWords(text).slice(0, 5);
+          return topicWords.length ? titleCase(topicWords.join(' ')) + ': Introduction' : 'Introduction';
+        }
+        if (/^(choose|set|build|make|create|use|record|edit|export|fix|add|remove|clean|start|write|plan|cook|mix|install|connect|improve|reduce|find|pick|learn)\b/i.test(phrase)) {
+          phrase = 'How to ' + phrase.charAt(0).toLowerCase() + phrase.slice(1);
+        }
+        var suggestion = titleCase(phrase);
+        if (suggestion.length > 64) suggestion = suggestion.slice(0, 61).replace(/\s+\S*$/, '') + '…';
+        return suggestion || current;
+      }
+
+      function topKeywords(text, limit) {
+        var counts = {};
+        var firstSeen = {};
+        meaningfulWords(text).forEach(function (word, index) {
+          var key = word.toLowerCase().replace(/[^\p{L}\p{N}]/gu, '');
+          if (key.length < 3) return;
+          counts[key] = (counts[key] || 0) + 1;
+          if (firstSeen[key] === undefined) firstSeen[key] = index;
+        });
+        return Object.keys(counts).sort(function (a, b) {
+          return counts[b] - counts[a] || firstSeen[a] - firstSeen[b];
+        }).slice(0, limit);
+      }
+
+      function buildDescription() {
+        var titles = chapters.map(function (chapter) { return chapter.title.trim(); }).filter(Boolean);
+        var subjects = titles.filter(function (title, index) { return index > 0 && !/^chapter \d+$/i.test(title); }).slice(0, 3);
+        var intro = subjects.length
+          ? 'In this video, you’ll learn ' + subjects.map(function (title) { return title.charAt(0).toLowerCase() + title.slice(1); }).join(', ') + '.'
+          : 'Follow along with this step-by-step video.';
+        var lines = [intro, '', 'What you’ll learn:'];
+        titles.slice(1, 6).forEach(function (title) { lines.push('• ' + title); });
+        lines.push('', 'Chapters:', getPlainText());
+        var tags = topKeywords(transcript.value, 3);
+        if (tags.length) {
+          lines.push('', tags.map(function (tag) {
+            return '#' + tag.replace(/[^\p{L}\p{N}]/gu, '');
+          }).join(' '));
+        }
+        return lines.join('\n');
+      }
+
+      function buildChapters(cues, duration, requested, style) {
+        if (!cues.length) return [];
+        var autoCount = Math.max(3, Math.min(12, Math.round(duration / 100)));
+        var count = requested === 'auto' ? autoCount : parseInt(requested, 10);
+        count = Math.max(3, Math.min(count, cues.length));
+        var selected = [];
+
+        if (cues.length <= count) {
+          selected = cues.slice();
+        } else {
+          var used = {};
+          for (var i = 0; i < count; i++) {
+            var target = i === 0 ? 0 : (duration * i / count);
+            var best = 0;
+            var bestDistance = Infinity;
+            cues.forEach(function (cue, cueIndex) {
+              if (used[cueIndex]) return;
+              var distance = Math.abs(cue.time - target);
+              if (distance < bestDistance) { bestDistance = distance; best = cueIndex; }
+            });
+            used[best] = true;
+            selected.push(cues[best]);
+          }
+          selected.sort(function (a, b) { return a.time - b.time; });
+        }
+
+        if (selected[0].time > 0) selected[0] = { time: 0, text: selected[0].text };
+        return selected.map(function (cue, index) {
+          var next = selected[index + 1];
+          var context = cue.text;
+          var cuePosition = cues.indexOf(cue);
+          if (cuePosition >= 0 && next) {
+            for (var k = cuePosition + 1; k < cues.length && cues[k].time < next.time && context.length < 180; k++) context += ' ' + cues[k].text;
+          }
+          return { time: cue.time, title: deriveTitle(context, index, style), sourceText: context };
+        });
+      }
+
+      function getPlainText() {
+        return chapters.map(function (chapter) { return formatTime(chapter.time) + ' ' + chapter.title.trim(); }).join('\n');
+      }
+
+      function validateChapters() {
+        var issues = [];
+        if (chapters.length < 3) issues.push('Add at least 3 chapters');
+        if (!chapters.length || chapters[0].time !== 0) issues.push('First chapter must start at 00:00');
+        for (var i = 1; i < chapters.length; i++) {
+          if (chapters[i].time - chapters[i - 1].time < 10) { issues.push('Keep chapters at least 10 seconds apart'); break; }
+        }
+        if (chapters.some(function (c) { return !c.title.trim(); })) issues.push('Every chapter needs a title');
+        if (issues.length) {
+          validation.className = 'validation warn';
+          validation.innerHTML = '<svg width="15" height="15" viewBox="0 0 20 20" fill="none" aria-hidden="true" style="flex:none;margin-top:1px"><path d="M10 2.5 18 17H2l8-14.5Z" stroke="currentColor" stroke-width="1.6"/><path d="M10 7v4.5M10 14.5v.1" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg><span>' + issues.join(' · ') + '</span>';
+        } else {
+          validation.className = 'validation';
+          validation.innerHTML = '<svg width="15" height="15" viewBox="0 0 20 20" fill="none" aria-hidden="true" style="flex:none;margin-top:1px"><circle cx="10" cy="10" r="7.5" stroke="currentColor" stroke-width="1.6"/><path d="m6.5 10 2.2 2.2 4.8-5" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg><span>Ready for YouTube — chapter format checks passed</span>';
+        }
+      }
+
+      function renderSeoSuggestions() {
+        seoSuggestions = chapters.map(function (chapter, index) {
+          return deriveSeoTitle(chapter.sourceText || chapter.title, chapter.title, index);
+        });
+        suggestionList.innerHTML = '';
+        seoSuggestions.forEach(function (suggestion, index) {
+          var row = document.createElement('div');
+          row.className = 'suggestion-row';
+          var time = document.createElement('span');
+          time.className = 'suggestion-time';
+          time.textContent = formatTime(chapters[index].time);
+          var copy = document.createElement('div');
+          copy.className = 'suggestion-copy';
+          var strong = document.createElement('strong');
+          strong.textContent = suggestion;
+          var current = document.createElement('span');
+          current.textContent = suggestion === chapters[index].title ? 'Already optimized' : 'Current: ' + chapters[index].title;
+          copy.appendChild(strong);
+          copy.appendChild(current);
+          row.appendChild(time);
+          row.appendChild(copy);
+          suggestionList.appendChild(row);
+        });
+      }
+
+      function showTool(panel) {
+        var showSeo = panel === 'seo';
+        seoPanel.classList.toggle('visible', showSeo);
+        descriptionPanel.classList.toggle('visible', !showSeo);
+        if (showSeo) {
+          renderSeoSuggestions();
+          seoBtn.setAttribute('aria-expanded', 'true');
+          descriptionBtn.setAttribute('aria-expanded', 'false');
+        } else {
+          descriptionOutput.value = buildDescription();
+          seoBtn.setAttribute('aria-expanded', 'false');
+          descriptionBtn.setAttribute('aria-expanded', 'true');
+        }
+      }
+
+      function render() {
+        chapterList.innerHTML = '';
+        chapters.forEach(function (chapter, index) {
+          var row = document.createElement('div');
+          row.className = 'chapter-row';
+
+          var time = document.createElement('input');
+          time.className = 'chapter-time';
+          time.value = formatTime(chapter.time);
+          time.setAttribute('aria-label', 'Chapter ' + (index + 1) + ' timestamp');
+          time.addEventListener('change', function () {
+            var parsed = parseTime(time.value);
+            if (parsed === null) { time.value = formatTime(chapter.time); showToast('Use a timestamp like 1:24'); return; }
+            chapter.time = parsed;
+            chapters.sort(function (a, b) { return a.time - b.time; });
+            render();
+          });
+
+          var title = document.createElement('input');
+          title.className = 'chapter-title';
+          title.value = chapter.title;
+          title.setAttribute('aria-label', 'Chapter ' + (index + 1) + ' title');
+          title.addEventListener('input', function () { chapter.title = title.value; validateChapters(); });
+
+          var remove = document.createElement('button');
+          remove.type = 'button';
+          remove.className = 'remove-btn';
+          remove.setAttribute('aria-label', 'Remove chapter ' + (index + 1));
+          remove.innerHTML = '<svg width="16" height="16" viewBox="0 0 20 20" fill="none" aria-hidden="true"><path d="M5 10h10" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>';
+          remove.addEventListener('click', function () { chapters.splice(index, 1); render(); });
+
+          row.appendChild(time);
+          row.appendChild(title);
+          row.appendChild(remove);
+          chapterList.appendChild(row);
+        });
+
+        summaryCount.textContent = String(chapters.length);
+        summaryDuration.textContent = detectedDuration ? formatTime(detectedDuration) : '—';
+        summarySource.textContent = sourceMode === 'timestamps' ? 'Detected' : 'Estimated';
+        copyBtn.disabled = !chapters.length;
+        downloadBtn.disabled = !chapters.length;
+        validateChapters();
+      }
+
+      function updateInputState() {
+        var count = (transcript.value.trim().match(/\S+/g) || []).length;
+        wordCount.textContent = count.toLocaleString() + (count === 1 ? ' word' : ' words');
+        var hasTimes = parseTimedTranscript(transcript.value).length > 0;
+        durationField.classList.toggle('visible', transcript.value.trim().length > 0 && !hasTimes);
+      }
+
+      function generate() {
+        var text = transcript.value.trim();
+        if (!text) { showToast('Paste a transcript first'); transcript.focus(); return; }
+        var cues = parseTimedTranscript(text);
+        sourceMode = 'timestamps';
+        var duration;
+
+        if (cues.length) {
+          var gaps = [];
+          for (var i = 1; i < cues.length; i++) if (cues[i].time > cues[i - 1].time) gaps.push(cues[i].time - cues[i - 1].time);
+          gaps.sort(function (a, b) { return a - b; });
+          var typicalGap = gaps.length ? gaps[Math.floor(gaps.length / 2)] : 30;
+          duration = Math.max(cues[cues.length - 1].time + Math.max(20, Math.min(typicalGap, 120)), 30);
+        } else {
+          duration = parseTime(durationInput.value);
+          if (!duration || duration < 30) {
+            durationField.classList.add('visible');
+            durationInput.focus();
+            showToast('Add the video length to estimate timestamps');
+            return;
+          }
+          sourceMode = 'estimated';
+          cues = estimateCues(text, duration);
+        }
+
+        if (cues.length < 3) {
+          showToast('Add more transcript text to create 3 chapters');
+          return;
+        }
+        detectedDuration = duration;
+        chapters = buildChapters(cues, duration, chapterCount.value, titleStyle.value);
+        seoPanel.classList.remove('visible');
+        descriptionPanel.classList.remove('visible');
+        seoBtn.setAttribute('aria-expanded', 'false');
+        descriptionBtn.setAttribute('aria-expanded', 'false');
+        emptyState.classList.add('hidden');
+        results.classList.add('visible');
+        render();
+        if (window.innerWidth < 880) document.querySelector('.result-panel').scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+
+      function switchTool(tool) {
+        navButtons.forEach(function (button) {
+          var active = button.getAttribute('data-tool') === tool;
+          button.classList.toggle('active', active);
+          if (active) button.setAttribute('aria-current', 'page');
+          else button.removeAttribute('aria-current');
+        });
+        toolViews.forEach(function (view) { view.classList.toggle('active', view.getAttribute('data-view') === tool); });
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      }
+
+      function updateCount(input, output) {
+        var count = (input.value.trim().match(/\S+/g) || []).length;
+        output.textContent = count.toLocaleString() + (count === 1 ? ' word' : ' words');
+      }
+
+      function useMainTranscript(target, counter) {
+        if (!transcript.value.trim()) { switchTool('chapters'); transcript.focus(); showToast('Paste a transcript first'); return; }
+        target.value = transcript.value;
+        updateCount(target, counter);
+        target.focus();
+        showToast('Chapter transcript added');
+      }
+
+      function downloadText(text, filename, type) {
+        var blob = new Blob([text + '\n'], { type: type || 'text/plain;charset=utf-8' });
+        var url = URL.createObjectURL(blob);
+        var link = document.createElement('a');
+        link.href = url;
+        link.download = filename;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+      }
+
+      function getCues(text, durationValue) {
+        var cues = parseTimedTranscript(text);
+        var duration = 0;
+        var mode = 'timestamps';
+        if (cues.length) {
+          var gaps = [];
+          for (var i = 1; i < cues.length; i++) if (cues[i].time > cues[i - 1].time) gaps.push(cues[i].time - cues[i - 1].time);
+          gaps.sort(function (a, b) { return a - b; });
+          var gap = gaps.length ? gaps[Math.floor(gaps.length / 2)] : 30;
+          duration = cues[cues.length - 1].time + Math.max(20, Math.min(gap, 120));
+        } else {
+          duration = parseTime(durationValue);
+          if (!duration || duration < 30) return null;
+          cues = estimateCues(text, duration);
+          mode = 'estimated';
+        }
+        return { cues: cues, duration: duration, mode: mode };
+      }
+
+      function hookReason(text) {
+        if (/\?/.test(text)) return 'Strong question';
+        if (/\b(?:\d+|one|two|three|four|five|percent|%|minutes?|seconds?)\b/i.test(text)) return 'Specific payoff';
+        if (/\b(?:mistake|wrong|never|stop|avoid|secret|truth|surprising|nobody|myth)\b/i.test(text)) return 'Curiosity trigger';
+        if (/\b(?:how to|here(?:'s| is) how|result|before|after|changed|worked|best)\b/i.test(text)) return 'Clear outcome';
+        return 'Focused takeaway';
+      }
+
+      function scoreHook(text) {
+        var score = Math.min(6, text.split(/\s+/).length / 10);
+        if (/\?/.test(text)) score += 5;
+        if (/\b(?:\d+|one|two|three|four|five|percent|%|minutes?|seconds?)\b/i.test(text)) score += 4;
+        if (/\b(?:mistake|wrong|never|stop|avoid|secret|truth|surprising|nobody|myth)\b/i.test(text)) score += 6;
+        if (/\b(?:how to|here(?:'s| is) how|result|before|after|changed|worked|best|worst|first)\b/i.test(text)) score += 4;
+        if (/\b(?:maybe|sort of|kind of|i think)\b/i.test(text)) score -= 2;
+        return score;
+      }
+
+      function buildHookSuggestions() {
+        var text = hookTranscript.value.trim();
+        if (!text) { hookTranscript.focus(); showToast('Paste a transcript first'); return; }
+        var parsed = getCues(text, hookDuration.value);
+        if (!parsed) { hookDuration.focus(); showToast('Add the video length for plain text'); return; }
+        var candidates = parsed.cues.map(function (cue, index) {
+          var excerpt = cue.text;
+          for (var i = index + 1; i < parsed.cues.length && parsed.cues[i].time < cue.time + 30 && excerpt.length < 260; i++) excerpt += ' ' + parsed.cues[i].text;
+          excerpt = cleanCaption(excerpt);
+          return { time: cue.time, end: Math.min(parsed.duration, cue.time + 30), text: excerpt, score: scoreHook(excerpt), reason: hookReason(excerpt) };
+        });
+        candidates.sort(function (a, b) { return b.score - a.score || a.time - b.time; });
+        var selected = [];
+        var wanted = parseInt(hookCount.value, 10);
+        candidates.forEach(function (candidate) {
+          if (selected.length >= wanted) return;
+          var overlaps = selected.some(function (existing) { return Math.abs(existing.time - candidate.time) < 24; });
+          if (!overlaps) selected.push(candidate);
+        });
+        hookSuggestions = selected.sort(function (a, b) { return a.time - b.time; });
+        hookList.innerHTML = '';
+        hookSuggestions.forEach(function (hook, index) {
+          var card = document.createElement('div');
+          card.className = 'hook-card';
+          var time = document.createElement('span');
+          time.className = 'hook-time';
+          time.textContent = formatTime(hook.time) + '–' + formatTime(hook.end);
+          var copy = document.createElement('div');
+          copy.className = 'hook-copy';
+          var title = document.createElement('strong');
+          title.textContent = deriveTitle(hook.text, index, 'clear');
+          var excerpt = document.createElement('p');
+          excerpt.textContent = hook.text.length > 190 ? hook.text.slice(0, 187).replace(/\s+\S*$/, '') + '…' : hook.text;
+          var reason = document.createElement('span');
+          reason.className = 'hook-reason';
+          reason.textContent = hook.reason;
+          copy.appendChild(title); copy.appendChild(excerpt); copy.appendChild(reason);
+          var button = document.createElement('button');
+          button.type = 'button'; button.className = 'icon-btn'; button.setAttribute('aria-label', 'Copy hook ' + (index + 1));
+          button.innerHTML = '<svg width="15" height="15" viewBox="0 0 20 20" fill="none" aria-hidden="true"><rect x="6" y="6" width="10" height="10" rx="2" stroke="currentColor" stroke-width="1.6"/><path d="M13 6V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h1" stroke="currentColor" stroke-width="1.6"/></svg>';
+          button.addEventListener('click', function () { fallbackCopy(formatTime(hook.time) + '–' + formatTime(hook.end) + ' ' + hook.text); });
+          card.appendChild(time); card.appendChild(copy); card.appendChild(button); hookList.appendChild(card);
+        });
+        hookEmpty.hidden = true;
+        hookResults.hidden = false;
+        copyHooksBtn.disabled = !hookSuggestions.length;
+        showToast(hookSuggestions.length + ' hook suggestions found');
+      }
+
+      function cleanForArticle(text) {
+        var cues = parseTimedTranscript(text);
+        if (cues.length) return cues.map(function (cue) { return cue.text; }).join(' ');
+        return cleanCaption(text.replace(/^WEBVTT.*$/gim, ' ').replace(/^\d+$/gm, ' ').replace(/^\d{1,2}:\d{2}(?::\d{2})?(?:[.,]\d+)?\s*-->.*$/gm, ' '));
+      }
+
+      function buildBlogDraft() {
+        var raw = blogTranscript.value.trim();
+        if (!raw) { blogTranscript.focus(); showToast('Paste a transcript first'); return; }
+        var clean = cleanForArticle(raw);
+        var sentences = clean.match(/[^.!?]+[.!?]+|[^.!?]+$/g) || [];
+        sentences = sentences.map(cleanCaption).filter(function (s) { return s.split(/\s+/).length > 2; });
+        if (sentences.length < 4) { showToast('Add more transcript detail for a useful draft'); return; }
+        var count = Math.min(parseInt(blogSections.value, 10), Math.max(2, Math.floor(sentences.length / 2)));
+        var title = blogDraftTitle.value.trim();
+        if (!title) {
+          var keywords = topKeywords(clean, 4);
+          title = keywords.length ? titleCase(keywords.join(' ')) : deriveTitle(sentences[0], 0, 'clear');
+        }
+        var introSize = Math.min(2, Math.max(1, Math.floor(sentences.length / 8)));
+        var intro = sentences.slice(0, introSize).join(' ');
+        var rest = sentences.slice(introSize);
+        var chunkSize = Math.ceil(rest.length / count);
+        var sections = [];
+        for (var i = 0; i < count; i++) {
+          var chunk = rest.slice(i * chunkSize, (i + 1) * chunkSize);
+          if (chunk.length) sections.push({ title: deriveTitle(chunk.join(' '), i + 1, 'clear'), body: chunk.join(' ') });
+        }
+        var lines = ['# ' + title, '', intro, ''];
+        sections.forEach(function (section) { lines.push('## ' + section.title, '', section.body, ''); });
+        lines.push('## Key takeaways', '');
+        sections.slice(0, 5).forEach(function (section) { lines.push('- ' + section.title); });
+        blogOutput.value = lines.join('\n').trim();
+        blogEmpty.hidden = true;
+        blogResults.hidden = false;
+        copyBlogBtn.disabled = false;
+        downloadBlogBtn.disabled = false;
+        showToast('Blog draft built');
+      }
+
+      function buildPodcastChapters() {
+        var text = podcastTranscript.value.trim();
+        if (!text) { podcastTranscript.focus(); showToast('Paste an episode transcript first'); return; }
+        var parsed = getCues(text, podcastDuration.value);
+        if (!parsed) { podcastDuration.focus(); showToast('Add the episode length for plain text'); return; }
+        if (parsed.cues.length < 3) { showToast('Add more transcript detail to create chapters'); return; }
+        var built = buildChapters(parsed.cues, parsed.duration, 'auto', 'clear');
+        var format = podcastFormat.value;
+        var output = built.map(function (chapter) {
+          if (format === 'apple') return formatTime(chapter.time) + ' — ' + chapter.title;
+          if (format === 'universal') return '[' + formatTime(chapter.time) + '] ' + chapter.title;
+          return formatTime(chapter.time) + ' ' + chapter.title;
+        }).join('\n');
+        podcastOutput.value = output;
+        podcastEmpty.hidden = true;
+        podcastResults.hidden = false;
+        copyPodcastBtn.disabled = false;
+        downloadPodcastBtn.disabled = false;
+        podcastValidation.className = 'validation' + (parsed.mode === 'estimated' ? ' warn' : '');
+        podcastValidation.textContent = parsed.mode === 'estimated' ? 'Timestamps are estimated from the episode length. Review them before publishing.' : 'Timestamps were taken from the transcript and formatted for ' + podcastFormat.options[podcastFormat.selectedIndex].text + '.';
+        showToast('Podcast chapters generated');
+      }
+
+      function checkYoutubeUrl() {
+        var value = youtubeUrl.value.trim();
+        if (!value) { youtubeUrl.focus(); showToast('Paste a YouTube link first'); return; }
+        var videoId = '';
+        try {
+          var url = new URL(value);
+          var host = url.hostname.toLowerCase().replace(/^www\./, '');
+          if (host === 'youtu.be') videoId = url.pathname.split('/').filter(Boolean)[0] || '';
+          else if (host === 'youtube.com' || host === 'm.youtube.com' || host === 'youtube-nocookie.com') {
+            videoId = url.searchParams.get('v') || '';
+            if (!videoId && /^\/(?:shorts|embed)\//.test(url.pathname)) videoId = url.pathname.split('/')[2] || '';
+          }
+        } catch (e) { videoId = ''; }
+        urlStatus.classList.add('visible');
+        if (/^[A-Za-z0-9_-]{11}$/.test(videoId)) {
+          urlStatus.innerHTML = '<strong>Valid YouTube link</strong>Video ID ' + videoId + ' is ready. Automatic transcript and duration fetching still needs the backend service.';
+        } else {
+          urlStatus.innerHTML = '<strong>That link does not look complete</strong>Use a youtube.com/watch, youtube.com/shorts, or youtu.be video link.';
+        }
+      }
+
+      navButtons.forEach(function (button) { button.addEventListener('click', function () { switchTool(button.getAttribute('data-tool')); }); });
+      hookTranscript.addEventListener('input', function () { updateCount(hookTranscript, hookWordCount); });
+      blogTranscript.addEventListener('input', function () { updateCount(blogTranscript, blogWordCount); });
+      podcastTranscript.addEventListener('input', function () { updateCount(podcastTranscript, podcastWordCount); });
+      document.getElementById('hookUseMain').addEventListener('click', function () { useMainTranscript(hookTranscript, hookWordCount); });
+      document.getElementById('blogUseMain').addEventListener('click', function () { useMainTranscript(blogTranscript, blogWordCount); });
+      document.getElementById('podcastUseMain').addEventListener('click', function () { useMainTranscript(podcastTranscript, podcastWordCount); });
+      document.getElementById('hookExampleBtn').addEventListener('click', function () { hookTranscript.value = example; updateCount(hookTranscript, hookWordCount); showToast('Example loaded'); });
+      document.getElementById('blogExampleBtn').addEventListener('click', function () { blogTranscript.value = example; updateCount(blogTranscript, blogWordCount); showToast('Example loaded'); });
+      document.getElementById('podcastExampleBtn').addEventListener('click', function () { podcastTranscript.value = example; updateCount(podcastTranscript, podcastWordCount); showToast('Example loaded'); });
+      document.getElementById('findHooksBtn').addEventListener('click', buildHookSuggestions);
+      copyHooksBtn.addEventListener('click', function () {
+        var text = hookSuggestions.map(function (hook) { return formatTime(hook.time) + '–' + formatTime(hook.end) + ' — ' + hook.text; }).join('\n\n');
+        if (text) fallbackCopy(text);
+      });
+      document.getElementById('buildBlogBtn').addEventListener('click', buildBlogDraft);
+      copyBlogBtn.addEventListener('click', function () { if (blogOutput.value.trim()) fallbackCopy(blogOutput.value.trim()); });
+      downloadBlogBtn.addEventListener('click', function () { if (blogOutput.value.trim()) { downloadText(blogOutput.value.trim(), 'transcript-blog-draft.md', 'text/markdown;charset=utf-8'); showToast('Blog draft downloaded'); } });
+      document.getElementById('buildPodcastBtn').addEventListener('click', buildPodcastChapters);
+      copyPodcastBtn.addEventListener('click', function () { if (podcastOutput.value.trim()) fallbackCopy(podcastOutput.value.trim()); });
+      downloadPodcastBtn.addEventListener('click', function () { if (podcastOutput.value.trim()) { downloadText(podcastOutput.value.trim(), 'podcast-chapters.txt'); showToast('Podcast chapters downloaded'); } });
+      document.getElementById('checkUrlBtn').addEventListener('click', checkYoutubeUrl);
+      document.getElementById('manualImportBtn').addEventListener('click', function () { switchTool('chapters'); transcript.focus(); });
+
+      transcript.addEventListener('input', updateInputState);
+      exampleBtn.addEventListener('click', function () { transcript.value = example; updateInputState(); transcript.focus(); showToast('Example loaded'); });
+      clearBtn.addEventListener('click', function () {
+        transcript.value = '';
+        durationInput.value = '';
+        chapters = [];
+        seoSuggestions = [];
+        seoPanel.classList.remove('visible');
+        descriptionPanel.classList.remove('visible');
+        emptyState.classList.remove('hidden');
+        results.classList.remove('visible');
+        updateInputState();
+        transcript.focus();
+      });
+      generateBtn.addEventListener('click', generate);
+      document.addEventListener('keydown', function (event) {
+        if ((event.ctrlKey || event.metaKey) && event.key === 'Enter') { event.preventDefault(); generate(); }
+      });
+
+      pasteBtn.addEventListener('click', function () {
+        if (!navigator.clipboard || !navigator.clipboard.readText) { transcript.focus(); showToast('Use your device’s paste command'); return; }
+        navigator.clipboard.readText().then(function (text) {
+          transcript.value = text;
+          updateInputState();
+          showToast('Transcript pasted');
+        }).catch(function () { transcript.focus(); showToast('Paste permission was not available'); });
+      });
+
+      copyBtn.addEventListener('click', function () {
+        var text = getPlainText();
+        if (!text) return;
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          navigator.clipboard.writeText(text).then(function () { showToast('Chapters copied'); }).catch(function () { fallbackCopy(text); });
+        } else fallbackCopy(text);
+      });
+
+      function fallbackCopy(text) {
+        var area = document.createElement('textarea');
+        area.value = text;
+        area.setAttribute('readonly', '');
+        area.style.position = 'fixed';
+        area.style.opacity = '0';
+        document.body.appendChild(area);
+        area.select();
+        try { document.execCommand('copy'); showToast('Chapters copied'); }
+        catch (e) { showToast('Select and copy the chapters manually'); }
+        document.body.removeChild(area);
+      }
+
+      downloadBtn.addEventListener('click', function () {
+        var blob = new Blob([getPlainText() + '\n'], { type: 'text/plain;charset=utf-8' });
+        var url = URL.createObjectURL(blob);
+        var link = document.createElement('a');
+        link.href = url;
+        link.download = 'youtube-chapters.txt';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+        showToast('Chapter file downloaded');
+      });
+
+      addBtn.addEventListener('click', function () {
+        var last = chapters[chapters.length - 1];
+        chapters.push({ time: last ? last.time + 30 : 0, title: 'New chapter', sourceText: 'New chapter' });
+        detectedDuration = Math.max(detectedDuration, chapters[chapters.length - 1].time + 30);
+        render();
+        var inputs = chapterList.querySelectorAll('.chapter-title');
+        if (inputs.length) { inputs[inputs.length - 1].focus(); inputs[inputs.length - 1].select(); }
+      });
+
+      seoBtn.addEventListener('click', function () { showTool('seo'); });
+      descriptionBtn.addEventListener('click', function () { showTool('description'); });
+      applySeoBtn.addEventListener('click', function () {
+        if (!seoSuggestions.length) renderSeoSuggestions();
+        chapters.forEach(function (chapter, index) {
+          chapter.title = seoSuggestions[index] || chapter.title;
+        });
+        render();
+        renderSeoSuggestions();
+        showToast('SEO title suggestions applied');
+      });
+      copyDescriptionBtn.addEventListener('click', function () {
+        var text = descriptionOutput.value.trim();
+        if (!text) return;
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          navigator.clipboard.writeText(text).then(function () { showToast('Description copied'); }).catch(function () { fallbackCopy(text); });
+        } else fallbackCopy(text);
+      });
+
+      updateInputState();
+    }());
+  </script>
+</body>
+</html>
